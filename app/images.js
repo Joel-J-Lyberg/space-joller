@@ -17,7 +17,10 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
   var background = new Image();
   background.src = "../graphics/background.png";
 
-  var invader_spritesheet = SpriteSheet.new(invader, {
+  var player_shot = new Image();
+  player_shot.src = "../graphics/player_shot.png";
+
+  var invader_spritesheet_blueprint = {
     frames: [200, 200, 200],
     x: 0,
     y: 0,
@@ -25,7 +28,7 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     height: 21,
     restart: true,
     autostart: true,
-  })
+  }
 
   var invader_exploding_spritesheet = SpriteSheet.new(invader_exploding, {
     frames: [1000, 50, 100, 100, 100, 150, 200],
@@ -62,9 +65,11 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     player: player,
     player_exploding: player_exploding,
     invader: invader,
+    invader_spritesheet_blueprint: invader_spritesheet_blueprint,
     invader_exploding: invader_exploding,
     star: star,
     star_spritesheet_blueprint: star_spritesheet_blueprint,
     background: background,
+    player_shot: player_shot,
   }
 })

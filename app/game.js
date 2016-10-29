@@ -16,6 +16,7 @@ define('app/game', [
 
   const DEBUG_RENDER_HITBOXES = !false
   const DEBUG_WRITE_BUTTONS = false
+  const DEBUG_DISABLE_GRAPHICS = false;
 
   let gameObjects = []
   let playerShip
@@ -48,6 +49,14 @@ define('app/game', [
       super(config)
       this.speed = config.speed
     }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.drawImage(images.player, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
+    }
+
   }
 
   class PlayerBullet extends GameObject {
@@ -57,6 +66,13 @@ define('app/game', [
     }
     tick() {
       this.velocity.y = -this.speed
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.drawImage(images.player_shot, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
     }
   }
 
@@ -69,6 +85,23 @@ define('app/game', [
   class Enemy extends GameObject {
     constructor(config) {
       super(config)
+      this.spritesheet = SpriteSheet.new(images.invader, images.invader_spritesheet_blueprint)
+      this.spritesheet.play();
+    }
+    tick() {
+      super.tick();
+      this.spritesheet.tick(1000/60);
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.save()
+        renderingContext.translate(this.hitbox.x, this.hitbox.y);
+        this.spritesheet.draw(renderingContext);
+        renderingContext.restore();
+        //renderingContext.drawImage(this.spritesheet, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
     }
   }
 
