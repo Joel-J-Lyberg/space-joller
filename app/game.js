@@ -52,6 +52,18 @@ define('app/game', [
     constructor(config) {
       super(config)
       this.speed = config.speed
+      this.recharged = true
+      this.rechargeTimer = 0;
+    }
+    tick() {
+      this.rechargeTimer--;
+      if (this.rechargeTimer <= 0) {
+        this.recharged = true;
+      }
+    }
+    fire() {
+      this.recharged = false;
+      this.rechargeTimer = 100;
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -239,8 +251,9 @@ define('app/game', [
       if (pad.buttons[15].pressed) { // right
         playerShip.velocity.x = playerShip.speed
       }
-      if (pad.buttons[0].pressed) { // shoot
+      if (pad.buttons[0].pressed && playerShip.recharged) { // shoot
         const bulletHeight = 15
+        playerShip.fire();
         gameObjects.push(new PlayerBullet({
           hitbox: {
             x: playerShip.hitbox.x,
