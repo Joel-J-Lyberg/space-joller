@@ -103,10 +103,19 @@ define('app/game', [
       super(config)
       this.spritesheet = SpriteSheet.new(images.invader, images.invader_spritesheet_blueprint)
       this.spritesheet.play();
+      this.direction = true; // false = left, true = right
+      this.startX = config.hitbox.x;
     }
     tick() {
       super.tick();
       this.spritesheet.tick(1000/60);
+      if (this.direction && this.hitbox.x > this.startX + 80) {
+        this.direction = false;
+      } else if (this.hitbox.x < this.startX) {
+        this.direction = true;
+      }
+      this.velocity.x = (this.direction) ? 1 : -1;
+      this.velocity.y = 0.1;
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -230,14 +239,17 @@ define('app/game', [
       })
       gameObjects.push(playerShip)
 
-      gameObjects.push(new Enemy({
-        hitbox: {
-          x: 200,
-          y: 20,
-          width: 27,
-          height: 21,
-        },
-      }))
+      _.each(new Array(7), function(item, idx) {
+        gameObjects.push(new Enemy({
+          hitbox: {
+            x: 70 + (idx * 40),
+            y: 20,
+            width: 27,
+            height: 21,
+          },
+        }))
+
+      })
 
     },
     tick: function() {
