@@ -18,6 +18,8 @@ define('app/game', [
   const DEBUG_WRITE_BUTTONS = false
   const DEBUG_DISABLE_GRAPHICS = false;
 
+  let gameOver = false;
+
   let playSound
 
   let gameObjects = []
@@ -75,6 +77,28 @@ define('app/game', [
       }
     }
 
+  }
+
+  class PlayerExplosion extends GameObject {
+    constructor(config) {
+      super(config);
+      var blueprint = images.player_exploding_blueprint;
+      blueprint.callback = function() {
+        this.markedForRemoval = true;
+        gameOver = true;
+      }.bind(this);
+      this.spritesheet = SpriteSheet.new(images.player_exploding, blueprint);
+      this.spritesheet.play();
+    }
+    tick() {
+      this.spritesheet.tick(1000/60);
+    }
+    draw(renderingContext) {
+      renderingContext.save()
+      renderingContext.translate(this.hitbox.x - 7, this.hitbox.y - 7);
+      this.spritesheet.draw(renderingContext);
+      renderingContext.restore();
+    }
   }
 
   class PlayerBullet extends GameObject {
@@ -193,6 +217,15 @@ define('app/game', [
         },
       }))
     }
+    if (isOfTypes(gameObject, other, Enemy, PlayerShip)) {
+      playerShip.markedForRemoval = true;
+      gameObjects.push(new PlayerExplosion({
+        hitbox: {
+          x: playerShip.hitbox.x,
+          y: playerShip.hitbox.y
+        }
+      }))
+    }
   }
 
   function detectCollision(hitbox, nextPosition, otherHitbox) {
@@ -255,7 +288,7 @@ define('app/game', [
         gameObjects.push(new Enemy({
           hitbox: {
             x: 50 + (idx * 45),
-            y: 400,
+            y: 500,
             width: 27,
             height: 21,
           },
@@ -265,6 +298,10 @@ define('app/game', [
 
     },
     tick: function() {
+
+      if (gameOver) {
+        return;
+      }
 
       const pad = userInput.getInput(0)
       debugWriteButtons(pad)
@@ -344,6 +381,12 @@ define('app/game', [
       _.each(gameObjects, function (gameObject) {
         gameObject.draw(renderingContext)
       })
+
+      if (gameOver) {
+        renderingContext.font= "30px Verdana";
+        renderingContext.fillStyle="white";
+        renderingContext.fillText("GAME OVER",145,100);
+      }
     },
   }
 })
