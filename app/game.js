@@ -11,9 +11,10 @@ define('app/game', [
   const canvasHeight = 640
 
   const DEBUG_RENDER_HITBOXES = !false
-  const DEBUG_WRITE_BUTTONS = !false
+  const DEBUG_WRITE_BUTTONS = false
 
   let gameObjects = []
+  let playerShip
 
   class Hitbox {
     constructor(x, y, width, height) {
@@ -33,15 +34,12 @@ define('app/game', [
       }
 
       this.nextPosition = {
-        x: hitbox.x,
-        y: hitbox.y,
+        x: this.hitbox.x,
+        y: this.hitbox.y,
       }
       this.isRemoved = false
     }
-    doAction(type, params) {
-    }
     tick() {
-      
     }
     draw(renderingContext) {
       if (DEBUG_RENDER_HITBOXES) {
@@ -53,6 +51,19 @@ define('app/game', [
           hitbox.width,
           hitbox.height)
       }
+    }
+  }
+
+  class PlayerShip extends GameObject {
+    constructor(config) {
+      super(config)
+      this.speed = config.speed
+    }
+  }
+
+  class Enemy1 extends GameObject {
+    constructor(config) {
+      super(config)
     }
   }
   
@@ -78,7 +89,7 @@ define('app/game', [
     })
   }
 
-  function resolveCollision(collisionObject) {
+  function resolveCollision(gameObject, other) {
 
   }
 
@@ -124,13 +135,29 @@ define('app/game', [
   return {
     init: function() {
 
-      
+      playerShip = new PlayerShip({
+        hitbox: new Hitbox(
+            canvasWidth / 2,
+            canvasHeight - 48,
+            27,
+            21),
+        speed: 4,
+
+      })
+      gameObjects.push(playerShip)
 
     },
     tick: function() {
 
       const pad = userInput.getInput(0)
       debugWriteButtons(pad)
+
+      if (pad.buttons[14].pressed) { // left
+        playerShip.velocity.x = -playerShip.speed
+      }
+      if (pad.buttons[15].pressed) { // right
+        playerShip.velocity.x = playerShip.speed
+      } 
 
       const activeGameObjects = getAllActiveGameObjects()
       _.each(activeGameObjects, function (gameObject) {
@@ -139,6 +166,11 @@ define('app/game', [
 
       // resolve movement changes and collisions
       _.each(activeGameObjects, function (gameObject) {
+
+        const nextPosition = {
+          x: gameObject.hitbox.x + gameObject.velocity.x,
+          y: gameObject.hitbox.y, // Only changing x in this game
+        }
         
         for (let i = 0; i < activeGameObjects.length; i++) {
           const other = activeGameObjects[i]
@@ -149,6 +181,16 @@ define('app/game', [
             resolveCollision(gameObject, other)
           }
         }
+
+        // set new position
+        if (nextPosition.x >= 0 && nextPosition.x + gameObject.hitbox.width <= canvasWidth) {
+          gameObject.hitbox.x = nextPosition.x
+          gameObject.hitbox.y = nextPosition.y
+        }
+
+        // reset velocity
+        gameObject.velocity.x = 0
+        gameObject.velocity.y = 0
         
       })
 
