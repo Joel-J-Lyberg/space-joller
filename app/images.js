@@ -30,7 +30,17 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     autostart: true,
   }
 
-  var invader_exploding_spritesheet = SpriteSheet.new(invader_exploding, {
+  var invader_exploding_blueprint = {
+    frames: [10, 50, 100, 100, 100, 150, 200],
+    x: 0,
+    y: 0,
+    width: 14 * 3,
+    height: 14 * 3,
+    restart: false,
+    autostart: true,
+  }
+
+  /*var invader_exploding_spritesheet = SpriteSheet.new(invader_exploding, {
     frames: [1000, 50, 100, 100, 100, 150, 200],
     x: 0,
     y: 0,
@@ -38,7 +48,7 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     height: 14 * 3,
     restart: true,
     autostart: true,
-  })
+  })*/
 
   var star_spritesheet_blueprint = {
     frames: [3000, 50, 200, 200, 200, 50],
@@ -65,8 +75,9 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     player: player,
     player_exploding: player_exploding,
     invader: invader,
-    invader_spritesheet_blueprint: invader_spritesheet_blueprint,
     invader_exploding: invader_exploding,
+    invader_spritesheet_blueprint: invader_spritesheet_blueprint,
+    invader_exploding_blueprint: invader_exploding_blueprint,
     star: star,
     star_spritesheet_blueprint: star_spritesheet_blueprint,
     background: background,

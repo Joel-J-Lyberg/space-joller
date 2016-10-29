@@ -23,6 +23,7 @@ define('app/game', [
 
   class GameObject {
     constructor(config) {
+      this.markedForRemoval = false;
       this.hitbox = config.hitbox
       this.velocity = config.velocity || {
         x: 0,
@@ -41,6 +42,9 @@ define('app/game', [
           hitbox.width,
           hitbox.height)
       }
+    }
+    remove() {
+      this.markedForRemoval = true;
     }
   }
 
@@ -98,10 +102,30 @@ define('app/game', [
         renderingContext.translate(this.hitbox.x, this.hitbox.y);
         this.spritesheet.draw(renderingContext);
         renderingContext.restore();
-        //renderingContext.drawImage(this.spritesheet, this.hitbox.x, this.hitbox.y);
       } else {
         super.draw(renderingContext);
       }
+    }
+  }
+
+  class EnemyExplosion extends GameObject {
+    constructor(config) {
+      super(config);
+      var blueprint = images.invader_exploding_blueprint;
+      blueprint.callback = function() {
+        this.markedForRemoval = true;
+      }.bind(this);
+      this.spritesheet = SpriteSheet.new(images.invader_exploding, blueprint);
+      this.spritesheet.play();
+    }
+    tick() {
+      this.spritesheet.tick(1000/60);
+    }
+    draw(renderingContext) {
+      renderingContext.save()
+      renderingContext.translate(this.hitbox.x - 7, this.hitbox.y - 7);
+      this.spritesheet.draw(renderingContext);
+      renderingContext.restore();
     }
   }
 
@@ -128,7 +152,15 @@ define('app/game', [
 
   function resolveCollision(gameObject, other) {
     if (isOfTypes(gameObject, other, Enemy, PlayerBullet)) {
-      console.log('RESOLVE')
+      gameObject.remove();
+      other.remove();
+
+      gameObjects.push(new EnemyExplosion({
+        hitbox: {
+          x: other.hitbox.x,
+          y: other.hitbox.y
+        },
+      }))
     }
   }
 
@@ -257,7 +289,7 @@ define('app/game', [
 
       // remove all removed gameObjects
       gameObjects = gameObjects.filter(function (gameObject) {
-        return !gameObject.isRemoved
+        return !gameObject.markedForRemoval
       })
 
       window.gameObjects = gameObjects
