@@ -185,6 +185,7 @@ define('app/game', [
       gameObject.remove();
       other.remove();
 
+      playSound('enemyHit')
       gameObjects.push(new EnemyExplosion({
         hitbox: {
           x: other.hitbox.x,
@@ -276,6 +277,7 @@ define('app/game', [
       }
       if (pad.buttons[0].pressed && playerShip.recharged) { // shoot
         const bulletHeight = 15
+        playSound('shot')
         playerShip.fire();
         gameObjects.push(new PlayerBullet({
           hitbox: {
@@ -287,6 +289,10 @@ define('app/game', [
           speed: 7,
         }))
       }
+
+      const activeGameObjects = gameObjects.filter(function (gameObject) {
+        return !gameObject.markedForRemoval
+      })
 
       _.each(gameObjects, function (gameObject) {
         gameObject.tick()
@@ -300,7 +306,8 @@ define('app/game', [
         }
         for (let i = 0; i < gameObjects.length; i++) {
           const other = gameObjects[i]
-          if (detectCollision(
+          if (!other.markedForRemoval && !gameObject.markedForRemoval && 
+            detectCollision(
               gameObject.hitbox,
               nextPosition,
               other.hitbox)) {

@@ -23,6 +23,7 @@ requirejs([
 
   const sfxs = {
     shot: new Audio('Shot001.ogg'),
+    enemyHit: new Audio('Shot002.ogg'),
   }
   
   window.addEventListener('keydown', function (e) {
