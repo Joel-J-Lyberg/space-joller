@@ -13,6 +13,8 @@ define('app/game', [
   const DEBUG_RENDER_HITBOXES = !false
   const DEBUG_WRITE_BUTTONS = false
 
+  let playSound
+
   let gameObjects = []
   let playerShip
 
@@ -135,7 +137,9 @@ define('app/game', [
   }
 
   return {
-    init: function() {
+    init: function(_playSound) {
+
+      playSound = _playSound
 
       playerShip = new PlayerShip({
         hitbox: {
