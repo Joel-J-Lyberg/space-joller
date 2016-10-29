@@ -13,13 +13,12 @@ requirejs([
   let running = true
   let muted = false
 
-  // const musicAudio = document.getElementById('music')
   const musicAudio = new Audio('music.ogg')
   musicAudio.addEventListener('ended', function() {
       this.currentTime = 0;
       this.play();
   }, false);
-  // musicAudio.play();
+  musicAudio.play();
 
   const sfxs = {
     shot: new Audio('Shot001.ogg'),
