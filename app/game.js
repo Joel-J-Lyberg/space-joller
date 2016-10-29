@@ -162,6 +162,7 @@ define('app/game', [
     possiblyAShot() {
       var chance = utils.interpolateLinear(24, 0.002, 0.0002)[countEnemies()-1];
       if (Math.random() < chance) {
+        playSound('enemyShot')
         gameObjects.push(new EnemyBullet({
           hitbox: {
             x: this.hitbox.x + this.hitbox.width / 2,
