@@ -11,7 +11,7 @@ define('app/game', [
   const canvasHeight = 640
 
   const DEBUG_RENDER_HITBOXES = !false
-  const DEBUG_WRITE_BUTTONS = false
+  const DEBUG_WRITE_BUTTONS = !false
 
   let gameObjects = []
   let playerShip
@@ -61,7 +61,23 @@ define('app/game', [
     }
   }
 
-  class Enemy1 extends GameObject {
+  class PlayerBullet extends GameObject {
+    constructor(config) {
+      super(config)
+      this.speed = config.speed
+    }
+    tick() {
+      this.velocity.y = -this.speed
+    }
+  }
+
+  // class EnemyBullet extends GameObject {
+  //   constructor(config) {
+  //     super(config)
+  //   }
+  // }
+
+  class Enemy extends GameObject {
     constructor(config) {
       super(config)
     }
@@ -83,6 +99,11 @@ define('app/game', [
     }
   }
 
+  function isOfTypes(gameObject, other, type1, type2) {
+    return (gameObject instanceof type1 && other instanceof type2) ||
+        (gameObject instanceof type2 && other instanceof type1)
+  }
+
   function getAllActiveGameObjects() {
     return gameObjects.filter(function (gameObject) {
       return !gameObject.isRemoved
@@ -90,7 +111,10 @@ define('app/game', [
   }
 
   function resolveCollision(gameObject, other) {
-
+    console.log('resolveCollision')
+    if (isOfTypes(gameObject, other, Enemy, PlayerBullet)) {
+      console.log("HITHITHIH")
+    }
   }
 
   function detectCollision(hitbox, nextPosition, otherHitbox) {
@@ -146,6 +170,14 @@ define('app/game', [
       })
       gameObjects.push(playerShip)
 
+      gameObjects.push(new Enemy({
+        hitbox: new Hitbox(
+            200,
+            40,
+            27,
+            21),
+      }))
+
     },
     tick: function() {
 
@@ -157,7 +189,18 @@ define('app/game', [
       }
       if (pad.buttons[15].pressed) { // right
         playerShip.velocity.x = playerShip.speed
-      } 
+      }
+      if (pad.buttons[0].pressed) { // shoot
+        const bulletHeight = 15
+        gameObjects.push(new PlayerBullet({
+          hitbox: new Hitbox(
+              playerShip.hitbox.x,
+              playerShip.hitbox.y - bulletHeight - 4,
+              3,
+              bulletHeight),
+          speed: 1,
+        }))
+      }
 
       const activeGameObjects = getAllActiveGameObjects()
       _.each(activeGameObjects, function (gameObject) {
@@ -169,7 +212,7 @@ define('app/game', [
 
         const nextPosition = {
           x: gameObject.hitbox.x + gameObject.velocity.x,
-          y: gameObject.hitbox.y, // Only changing x in this game
+          y: gameObject.hitbox.y + gameObject.velocity.y,
         }
         
         for (let i = 0; i < activeGameObjects.length; i++) {
