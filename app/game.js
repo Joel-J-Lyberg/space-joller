@@ -2,41 +2,43 @@ define('app/game', [
   'underscore',
   'userInput',
   'utils',
-  'app/GameObject',
-  'app/Collision',
 ], function (
   _,
   userInput,
-  utils,
-  GameObject,
-  Collision
+  utils
 ) {
   const canvasWidth = 480
   const canvasHeight = 640
 
   const DEBUG_RENDER_HITBOXES = !false
+  const DEBUG_WRITE_BUTTONS = !false
+
+  let gameObjects = []
 
   class Hitbox {
-    constructor(config) {
-      
+    constructor(x, y, width, height) {
+      this.x = x
+      this.y = y
+      this.width = width
+      this.height = height
     }
   }
 
   class GameObject {
     constructor(config) {
       this.hitbox = config.hitbox
-      this.keepInsideGameArea = config.keepInsideGameArea || false
       this.velocity = config.velocity || {
         x: 0,
         y: 0,
       }
+
+      this.nextPosition = {
+        x: hitbox.x,
+        y: hitbox.y,
+      }
+      this.isRemoved = false
     }
     doAction(type, params) {
-      switch (type) {
-        case world.ACTION_SET_POSITION:
-          this.position = params
-          break
-      }
     }
     tick() {
       
@@ -55,7 +57,7 @@ define('app/game', [
   }
   
   function debugWriteButtons(pad) {
-    if (world.DEBUG_WRITE_BUTTONS && pad) {
+    if (DEBUG_WRITE_BUTTONS && pad) {
       let str = 'axes'
       _.each(pad.axes, function (axis, i) {
         str = `${str}  ${i}: ${axis.toFixed(4)}`
@@ -71,72 +73,49 @@ define('app/game', [
   }
 
   function getAllActiveGameObjects() {
-    return world.gameObjects.filter(function (gameObject) {
-      return !gameObject.isRemoved && !gameObject.isSpawned
+    return gameObjects.filter(function (gameObject) {
+      return !gameObject.isRemoved
     })
-  }
-
-  function mapTypesToObjects(object1, object2, type1, type2) {
-    if (object1 instanceof type1 && object2 instanceof type2 ||
-          object2 instanceof type1 && object1 instanceof type2) {
-      if (type1 === type2) {
-        return {
-          [type1]: [object1, object2],
-        }
-      }
-      return {
-        [type1]: object1 === type1 ? type1 : type2,
-        [type2]: object2 === type1 ? type1 : type2,
-      }
-    }
-    return null
   }
 
   function resolveCollision(collisionObject) {
 
-    // Ship - Bullet
-    // if (collisionObject.isGameObjectsOfTypes(Ship, Bullet)) {
-    //   console.log('Ship Bullet')
-    //   const bullet = collisionObject.getGameObjectsOfType(Bullet).pop()
-    //   world.removeGameObject(bullet) // TODO: Add check for side (players or AI)
-    //   return true
-    // }
-
-    // // Bullet - Bullet
-    // if (collisionObject.isGameObjectsOfTypes(Bullet, Bullet)) {
-    //   const bullets = collisionObject.getGameObjectsOfType(Bullet)
-    //   bullets.map(world.removeGameObject.bind(world))
-    //   return true
-    // }
-
-    // return true
   }
 
-  function detectCollision(gameObject, nextPosition, other) {
-    if (gameObject === other) {
+  function detectCollision(hitbox, nextPosition, otherHitbox) {
+    if (hitbox === otherHitbox) {
       return false
     }
-
-    for (let i = 0; i < gameObject.parts.length; i++) {
-      const gameObjectPart = gameObject.parts[i]
-      for (let j = 0; j < other.parts.length; j++) {
-        const otherPart = other.parts[j]
-        const gameObjectPartNextWorldPosition = utils.addVectors(
-            gameObjectPart.relativePosition,
-            nextPosition)
-        const otherPartWorldPosition = calcPartWorldPosition(other, otherPart)
-
-        if (utils.isXYInsideRect(
-            gameObjectPartNextWorldPosition.x,
-            gameObjectPartNextWorldPosition.y,
-            otherPartWorldPosition.x,
-            otherPartWorldPosition.y,
-            otherPartWorldPosition.x + world.GRID_SIZE,
-            otherPartWorldPosition.y + world.GRID_SIZE
-            )) {
-          return new Collision(gameObject, gameObjectPart, other, otherPart)
-        }
-      }
+    if (utils.isXYInsideRect(
+        nextPosition.x,
+        nextPosition.y,
+        otherHitbox.x,
+        otherHitbox.y,
+        otherHitbox.width,
+        otherHitbox.height) ||
+      utils.isXYInsideRect(
+        nextPosition.x + hitbox.width,
+        nextPosition.y,
+        otherHitbox.x,
+        otherHitbox.y,
+        otherHitbox.width,
+        otherHitbox.height) ||
+      utils.isXYInsideRect(
+        nextPosition.x,
+        nextPosition.y + hitbox.height,
+        otherHitbox.x,
+        otherHitbox.y,
+        otherHitbox.width,
+        otherHitbox.height) ||
+      utils.isXYInsideRect(
+        nextPosition.x + hitbox.width,
+        nextPosition.y + hitbox.height,
+        otherHitbox.x,
+        otherHitbox.y,
+        otherHitbox.width,
+        otherHitbox.height)
+      ) {
+      return true
     }
 
     return false
@@ -145,9 +124,7 @@ define('app/game', [
   return {
     init: function() {
 
-      const player0Behaviour = new PlayerBehaviour(0)
-      const playerShip = faction1Ship1Factory([player0Behaviour], {x: 12, y: 70}, true)
-      world.addGameObject(playerShip)
+      
 
     },
     tick: function() {
@@ -163,48 +140,23 @@ define('app/game', [
       // resolve movement changes and collisions
       _.each(activeGameObjects, function (gameObject) {
         
-
-
-        // keep object inside game area
-        if (gameObject.keepInsideGameArea) {
-          nextPosition.x = utils.cap(nextPosition.x, 0, world.GRID_XMAX)
-          nextPosition.y = utils.cap(nextPosition.y, 0, world.GRID_YMAX)
-        }
-
-        let collisionObject
         for (let i = 0; i < activeGameObjects.length; i++) {
           const other = activeGameObjects[i]
-          collisionObject = detectCollision(gameObject, nextPosition, other)
-          if (collisionObject) {
-            break;
+          if (detectCollision(
+              gameObject.hitbox,
+              gameObject.nextPosition,
+              other.hitbox)) {
+            resolveCollision(gameObject, other)
           }
-        }
-
-        if (collisionObject) { // TODO: check so you can still move in a train
-          const isMoveLegal = resolveCollision(collisionObject)
-          if (isMoveLegal) { // TODO: uuuh
-            gameObject.doAction(world.ACTION_SET_POSITION, nextPosition)
-          }
-        } else {
-          gameObject.doAction(world.ACTION_SET_POSITION, nextPosition)
         }
         
       })
 
-      // activate all spawned objects
-      _.each(world.gameObjects, function (gameObject) {
-        if (gameObject.isSpawned) {
-          gameObject.isSpawned = false
-        }
-      })
-
-      // remove all removed world.gameObjects
-      world.gameObjects = world.gameObjects.filter(function (gameObject) {
-        if (gameObject.isRemoved) {
-          gameObject.cleanUp()
-        }
+      // remove all removed gameObjects
+      gameObjects = gameObjects.filter(function (gameObject) {
         return !gameObject.isRemoved
       })
+
     },
     draw: function (renderingContext) {
       // bg black
