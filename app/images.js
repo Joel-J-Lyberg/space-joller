@@ -1,27 +1,27 @@
 define('app/images', ['SpriteSheet'], function(SpriteSheet) {
   var invader = new Image();
-  invader.src = "../graphics/enemy1_spritesheet.png";
+  invader.src = "./graphics/enemy1_spritesheet.png";
 
   var invader_shot = new Image();
-  invader_shot.src = "../graphics/enemy_shot.png";
+  invader_shot.src = "./graphics/enemy_shot.png";
 
   var player = new Image();
-  player.src = "../graphics/player.png";
+  player.src = "./graphics/player.png";
 
   var player_exploding = new Image();
-  player_exploding.src = "../graphics/player_explosion_spritesheet.png";
+  player_exploding.src = "./graphics/player_explosion_spritesheet.png";
 
   var invader_exploding = new Image();
-  invader_exploding.src = "../graphics/enemy_exploding_spritesheet.png";
+  invader_exploding.src = "./graphics/enemy_exploding_spritesheet.png";
 
   var star = new Image();
-  star.src = "../graphics/star_spritesheet.png";
+  star.src = "./graphics/star_spritesheet.png";
 
   var background = new Image();
-  background.src = "../graphics/background.png";
+  background.src = "./graphics/background.png";
 
   var player_shot = new Image();
-  player_shot.src = "../graphics/player_shot.png";
+  player_shot.src = "./graphics/player_shot.png";
 
   var invader_spritesheet_blueprint = {
     frames: [200, 200, 200],
