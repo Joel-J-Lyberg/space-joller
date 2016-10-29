@@ -2,16 +2,21 @@ define('app/game', [
   'underscore',
   'userInput',
   'utils',
+  'SpriteSheet',
+  'app/images'
 ], function (
   _,
   userInput,
-  utils
+  utils,
+  SpriteSheet,
+  images
 ) {
   const canvasWidth = 480
   const canvasHeight = 640
 
   const DEBUG_RENDER_HITBOXES = !false
   const DEBUG_WRITE_BUTTONS = false
+  const DEBUG_DISABLE_GRAPHICS = false;
 
   let playSound
 
@@ -20,6 +25,7 @@ define('app/game', [
 
   class GameObject {
     constructor(config) {
+      this.markedForRemoval = false;
       this.hitbox = config.hitbox
       this.velocity = config.velocity || {
         x: 0,
@@ -39,13 +45,36 @@ define('app/game', [
           hitbox.height)
       }
     }
+    remove() {
+      this.markedForRemoval = true;
+    }
   }
 
   class PlayerShip extends GameObject {
     constructor(config) {
       super(config)
       this.speed = config.speed
+      this.recharged = true
+      this.rechargeTimer = 0;
     }
+    tick() {
+      this.rechargeTimer--;
+      if (this.rechargeTimer <= 0) {
+        this.recharged = true;
+      }
+    }
+    fire() {
+      this.recharged = false;
+      this.rechargeTimer = 100;
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.drawImage(images.player, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
+    }
+
   }
 
   class PlayerBullet extends GameObject {
@@ -55,6 +84,13 @@ define('app/game', [
     }
     tick() {
       this.velocity.y = -this.speed
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.drawImage(images.player_shot, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
     }
   }
 
@@ -67,9 +103,55 @@ define('app/game', [
   class Enemy extends GameObject {
     constructor(config) {
       super(config)
+      this.spritesheet = SpriteSheet.new(images.invader, images.invader_spritesheet_blueprint)
+      this.spritesheet.play();
+      this.direction = true; // false = left, true = right
+      this.startX = config.hitbox.x;
+    }
+    tick() {
+      super.tick();
+      this.spritesheet.tick(1000/60);
+      if (this.direction && this.hitbox.x > this.startX + 80) {
+        this.direction = false;
+      } else if (this.hitbox.x < this.startX) {
+        this.direction = true;
+      }
+      this.velocity.x = (this.direction) ? 1 : -1;
+      this.velocity.y = 0.1;
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.save()
+        renderingContext.translate(this.hitbox.x, this.hitbox.y);
+        this.spritesheet.draw(renderingContext);
+        renderingContext.restore();
+      } else {
+        super.draw(renderingContext);
+      }
     }
   }
-  
+
+  class EnemyExplosion extends GameObject {
+    constructor(config) {
+      super(config);
+      var blueprint = images.invader_exploding_blueprint;
+      blueprint.callback = function() {
+        this.markedForRemoval = true;
+      }.bind(this);
+      this.spritesheet = SpriteSheet.new(images.invader_exploding, blueprint);
+      this.spritesheet.play();
+    }
+    tick() {
+      this.spritesheet.tick(1000/60);
+    }
+    draw(renderingContext) {
+      renderingContext.save()
+      renderingContext.translate(this.hitbox.x - 7, this.hitbox.y - 7);
+      this.spritesheet.draw(renderingContext);
+      renderingContext.restore();
+    }
+  }
+
   function debugWriteButtons(pad) {
     if (DEBUG_WRITE_BUTTONS && pad) {
       let str = 'axes'
@@ -93,7 +175,15 @@ define('app/game', [
 
   function resolveCollision(gameObject, other) {
     if (isOfTypes(gameObject, other, Enemy, PlayerBullet)) {
-      console.log('RESOLVE')
+      gameObject.remove();
+      other.remove();
+
+      gameObjects.push(new EnemyExplosion({
+        hitbox: {
+          x: other.hitbox.x,
+          y: other.hitbox.y
+        },
+      }))
     }
   }
 
@@ -153,14 +243,17 @@ define('app/game', [
       })
       gameObjects.push(playerShip)
 
-      gameObjects.push(new Enemy({
-        hitbox: {
-          x: 200,
-          y: 20,
-          width: 27,
-          height: 21,
-        },
-      }))
+      _.each(new Array(7), function(item, idx) {
+        gameObjects.push(new Enemy({
+          hitbox: {
+            x: 70 + (idx * 40),
+            y: 20,
+            width: 27,
+            height: 21,
+          },
+        }))
+
+      })
 
     },
     tick: function() {
@@ -174,8 +267,9 @@ define('app/game', [
       if (pad.buttons[15].pressed) { // right
         playerShip.velocity.x = playerShip.speed
       }
-      if (pad.buttons[0].pressed) { // shoot
+      if (pad.buttons[0].pressed && playerShip.recharged) { // shoot
         const bulletHeight = 15
+        playerShip.fire();
         gameObjects.push(new PlayerBullet({
           hitbox: {
             x: playerShip.hitbox.x,
@@ -197,10 +291,8 @@ define('app/game', [
           x: gameObject.hitbox.x + gameObject.velocity.x,
           y: gameObject.hitbox.y + gameObject.velocity.y,
         }
-        
         for (let i = 0; i < gameObjects.length; i++) {
           const other = gameObjects[i]
-
           if (detectCollision(
               gameObject.hitbox,
               nextPosition,
@@ -221,21 +313,19 @@ define('app/game', [
         // reset velocity
         gameObject.velocity.x = 0
         gameObject.velocity.y = 0
-        
+
       })
 
       // remove all removed gameObjects
       gameObjects = gameObjects.filter(function (gameObject) {
-        return !gameObject.isRemoved
+        return !gameObject.markedForRemoval
       })
 
       window.gameObjects = gameObjects
 
     },
     draw: function (renderingContext) {
-      // bg black
-      renderingContext.fillStyle = '#000000'
-      renderingContext.fillRect(0, 0, canvasWidth, canvasHeight)
+      renderingContext.drawImage(images.background, 0, 0);
 
       _.each(gameObjects, function (gameObject) {
         gameObject.draw(renderingContext)
