@@ -141,8 +141,8 @@ define('app/game', [
         this.direction = true;
       }
       var multiplerX = (this.direction) ? 1 : -1;
-      this.velocity.x = utils.interpolateLinear(24, 1, 0.1)[countEnemies()-1] * multiplerX;
-      this.velocity.y = utils.interpolateLinear(24, 1, 0.1)[countEnemies()-1]
+      this.velocity.x = utils.interpolateLinear(24, 1.8, 0.1)[countEnemies()-1] * multiplerX;
+      this.velocity.y = utils.interpolateLinear(24, 0.6, 0.1)[countEnemies()-1]
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -304,7 +304,7 @@ define('app/game', [
           gameObjects.push(new Enemy({
             hitbox: {
               x: 50 + (x * 45),
-              y: 100 + (y * 45),
+              y: 20 + (y * 45),
               width: 27,
               height: 21,
             }
