@@ -23,6 +23,7 @@ requirejs([
 
   const sfxs = {
     shot: new Audio('Shot001.ogg'),
+    enemyShot: new Audio('Shot003.ogg'),
     enemyHit: new Audio('Shot002.ogg'),
   }
   
