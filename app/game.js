@@ -318,8 +318,8 @@ define('app/game', [
         playerShip.fire();
         gameObjects.push(new PlayerBullet({
           hitbox: {
-            x: playerShip.hitbox.x,
-            y: playerShip.hitbox.y - bulletHeight - 1,
+            x: playerShip.hitbox.x + playerShip.hitbox.width / 2,
+            y: playerShip.hitbox.y - bulletHeight,
             width: 3,
             height: bulletHeight,
           },
