@@ -44,7 +44,7 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
   }
 
   var star_spritesheet_blueprint = {
-    frames: [3000, 50, 200, 200, 200, 50],
+    frames: [3000, 300, 550, 550, 550, 300],
     x: 0,
     y: 0,
     width: 21,
@@ -52,8 +52,7 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     restart: true,
     autostart: true,
   };
-  var star_spritesheet = SpriteSheet.new(star, star_spritesheet_blueprint)
-
+  
   var player_exploding_blueprint = {
     frames: [10, 100, 200, 300, 400],
     x: 0,

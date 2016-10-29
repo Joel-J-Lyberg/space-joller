@@ -54,6 +54,25 @@ define('app/game', [
     }
   }
 
+  class Star extends GameObject {
+    constructor(config) {
+      super(config);
+      var blueprint = images.star_spritesheet_blueprint;
+      this.spritesheet = SpriteSheet.new(images.star, blueprint);
+      this.spritesheet.play();
+      this.spritesheet.tick(config.start)
+    }
+    tick() {
+      this.spritesheet.tick(1000/60);
+    }
+    draw(renderingContext) {
+      renderingContext.save()
+      renderingContext.translate(this.hitbox.x, this.hitbox.y);
+      this.spritesheet.draw(renderingContext);
+      renderingContext.restore();
+    }
+  }
+
   class PlayerShip extends GameObject {
     constructor(config) {
       super(config)
@@ -350,6 +369,22 @@ define('app/game', [
           }))
         });
       })
+
+      gameObjects.push(new Star({
+        hitbox: {
+          x: 430,
+          y: 40
+        },
+        start: 2000
+      }))
+
+      gameObjects.push(new Star({
+        hitbox: {
+          x: 40,
+          y: 600
+        },
+        start: 0
+      }))
     },
     tick: function() {
 
