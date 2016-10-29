@@ -20,6 +20,8 @@ define('app/game', [
 
   let gameOver = false;
 
+  const bulletHeight = 15
+
   let playSound
 
   let gameObjects = []
@@ -118,11 +120,22 @@ define('app/game', [
     }
   }
 
-  // class EnemyBullet extends GameObject {
-  //   constructor(config) {
-  //     super(config)
-  //   }
-  // }
+  class EnemyBullet extends GameObject {
+     constructor(config) {
+      super(config)
+      this.speed = config.speed
+    }
+    tick() {
+      this.velocity.y = this.speed
+    }
+    draw(renderingContext) {
+      if (!DEBUG_DISABLE_GRAPHICS) {
+        renderingContext.drawImage(images.invader_shot, this.hitbox.x, this.hitbox.y);
+      } else {
+        super.draw(renderingContext);
+      }
+    }
+   }
 
   class Enemy extends GameObject {
     constructor(config) {
@@ -143,6 +156,22 @@ define('app/game', [
       var multiplerX = (this.direction) ? 1 : -1;
       this.velocity.x = utils.interpolateLinear(24, 1.8, 0.1)[countEnemies()-1] * multiplerX;
       this.velocity.y = utils.interpolateLinear(24, 0.6, 0.1)[countEnemies()-1]
+
+      this.possiblyAShot();
+    }
+    possiblyAShot() {
+      var chance = utils.interpolateLinear(24, 0.002, 0.0002)[countEnemies()-1];
+      if (Math.random() < chance) {
+        gameObjects.push(new EnemyBullet({
+          hitbox: {
+            x: this.hitbox.x + this.hitbox.width / 2,
+            y: this.hitbox.y + bulletHeight,
+            width: 3,
+            height: bulletHeight,
+          },
+          speed: 2,
+        }))
+      }
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -218,6 +247,15 @@ define('app/game', [
       }))
     }
     if (isOfTypes(gameObject, other, Enemy, PlayerShip)) {
+      playerShip.markedForRemoval = true;
+      gameObjects.push(new PlayerExplosion({
+        hitbox: {
+          x: playerShip.hitbox.x,
+          y: playerShip.hitbox.y
+        }
+      }))
+    }
+    if (isOfTypes(gameObject, other, EnemyBullet, PlayerShip)) {
       playerShip.markedForRemoval = true;
       gameObjects.push(new PlayerExplosion({
         hitbox: {
@@ -330,7 +368,6 @@ define('app/game', [
         playerShip.velocity.x = playerShip.speed
       }
       if (pad.buttons[0].pressed && playerShip.recharged) { // shoot
-        const bulletHeight = 15
         playSound('shot')
         playerShip.fire();
         gameObjects.push(new PlayerBullet({

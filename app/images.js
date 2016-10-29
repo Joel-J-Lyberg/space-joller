@@ -2,6 +2,9 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
   var invader = new Image();
   invader.src = "../graphics/enemy1_spritesheet.png";
 
+  var invader_shot = new Image();
+  invader_shot.src = "../graphics/enemy_shot.png";
+
   var player = new Image();
   player.src = "../graphics/player.png";
 
@@ -66,6 +69,7 @@ define('app/images', ['SpriteSheet'], function(SpriteSheet) {
     player_exploding: player_exploding,
     player_exploding_blueprint: player_exploding_blueprint,
     invader: invader,
+    invader_shot: invader_shot,
     invader_exploding: invader_exploding,
     invader_spritesheet_blueprint: invader_spritesheet_blueprint,
     invader_exploding_blueprint: invader_exploding_blueprint,
