@@ -116,8 +116,9 @@ define('app/game', [
       } else if (this.hitbox.x < this.startX) {
         this.direction = true;
       }
-      this.velocity.x = (this.direction) ? 1 : -1;
-      this.velocity.y = 0.1;
+      var baseX = (this.direction) ? 1 : -1;
+      this.velocity.x = baseX * (8 - countEnemies());
+      this.velocity.y = 0.1 * (8 - countEnemies());
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -166,6 +167,12 @@ define('app/game', [
       })
       console.log(str)
     }
+  }
+
+  function countEnemies() {
+    return _.filter(gameObjects, function(obj) {
+      return obj instanceof Enemy;
+    }).length;
   }
 
   function isOfTypes(gameObject, other, type1, type2) {
@@ -246,8 +253,8 @@ define('app/game', [
       _.each(new Array(7), function(item, idx) {
         gameObjects.push(new Enemy({
           hitbox: {
-            x: 70 + (idx * 40),
-            y: 20,
+            x: 50 + (idx * 45),
+            y: 400,
             width: 27,
             height: 21,
           },
