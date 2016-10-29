@@ -11,19 +11,10 @@ define('app/game', [
   const canvasHeight = 640
 
   const DEBUG_RENDER_HITBOXES = !false
-  const DEBUG_WRITE_BUTTONS = !false
+  const DEBUG_WRITE_BUTTONS = false
 
   let gameObjects = []
   let playerShip
-
-  class Hitbox {
-    constructor(x, y, width, height) {
-      this.x = x
-      this.y = y
-      this.width = width
-      this.height = height
-    }
-  }
 
   class GameObject {
     constructor(config) {
@@ -32,12 +23,6 @@ define('app/game', [
         x: 0,
         y: 0,
       }
-
-      this.nextPosition = {
-        x: this.hitbox.x,
-        y: this.hitbox.y,
-      }
-      this.isRemoved = false
     }
     tick() {
     }
@@ -104,16 +89,9 @@ define('app/game', [
         (gameObject instanceof type2 && other instanceof type1)
   }
 
-  function getAllActiveGameObjects() {
-    return gameObjects.filter(function (gameObject) {
-      return !gameObject.isRemoved
-    })
-  }
-
   function resolveCollision(gameObject, other) {
-    console.log('resolveCollision')
     if (isOfTypes(gameObject, other, Enemy, PlayerBullet)) {
-      console.log("HITHITHIH")
+      console.log('RESOLVE')
     }
   }
 
@@ -160,22 +138,24 @@ define('app/game', [
     init: function() {
 
       playerShip = new PlayerShip({
-        hitbox: new Hitbox(
-            canvasWidth / 2,
-            canvasHeight - 48,
-            27,
-            21),
+        hitbox: {
+          x: canvasWidth / 2,
+          y: canvasHeight - 48,
+          width: 27,
+          height: 21,
+        },
         speed: 4,
 
       })
       gameObjects.push(playerShip)
 
       gameObjects.push(new Enemy({
-        hitbox: new Hitbox(
-            200,
-            40,
-            27,
-            21),
+        hitbox: {
+          x: 200,
+          y: 20,
+          width: 27,
+          height: 21,
+        },
       }))
 
     },
@@ -193,43 +173,46 @@ define('app/game', [
       if (pad.buttons[0].pressed) { // shoot
         const bulletHeight = 15
         gameObjects.push(new PlayerBullet({
-          hitbox: new Hitbox(
-              playerShip.hitbox.x,
-              playerShip.hitbox.y - bulletHeight - 4,
-              3,
-              bulletHeight),
-          speed: 1,
+          hitbox: {
+            x: playerShip.hitbox.x,
+            y: playerShip.hitbox.y - bulletHeight - 1,
+            width: 3,
+            height: bulletHeight,
+          },
+          speed: 7,
         }))
       }
 
-      const activeGameObjects = getAllActiveGameObjects()
-      _.each(activeGameObjects, function (gameObject) {
+      _.each(gameObjects, function (gameObject) {
         gameObject.tick()
       })
 
       // resolve movement changes and collisions
-      _.each(activeGameObjects, function (gameObject) {
-
+      _.each(gameObjects, function (gameObject) {
         const nextPosition = {
           x: gameObject.hitbox.x + gameObject.velocity.x,
           y: gameObject.hitbox.y + gameObject.velocity.y,
         }
         
-        for (let i = 0; i < activeGameObjects.length; i++) {
-          const other = activeGameObjects[i]
+        for (let i = 0; i < gameObjects.length; i++) {
+          const other = gameObjects[i]
+
           if (detectCollision(
               gameObject.hitbox,
-              gameObject.nextPosition,
+              nextPosition,
               other.hitbox)) {
             resolveCollision(gameObject, other)
           }
         }
 
         // set new position
-        if (nextPosition.x >= 0 && nextPosition.x + gameObject.hitbox.width <= canvasWidth) {
+        // if (
+        //     nextPosition.x >= 0 &&
+        //     nextPosition.x + gameObject.hitbox.width <= canvasWidth)
+        // {
           gameObject.hitbox.x = nextPosition.x
           gameObject.hitbox.y = nextPosition.y
-        }
+        // }
 
         // reset velocity
         gameObject.velocity.x = 0
@@ -242,14 +225,15 @@ define('app/game', [
         return !gameObject.isRemoved
       })
 
+      window.gameObjects = gameObjects
+
     },
     draw: function (renderingContext) {
       // bg black
       renderingContext.fillStyle = '#000000'
       renderingContext.fillRect(0, 0, canvasWidth, canvasHeight)
 
-      const activeGameObjects = getAllActiveGameObjects()
-      _.each(activeGameObjects, function (gameObject) {
+      _.each(gameObjects, function (gameObject) {
         gameObject.draw(renderingContext)
       })
     },
