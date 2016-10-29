@@ -67,7 +67,7 @@ define('app/game', [
     }
     fire() {
       this.recharged = false;
-      this.rechargeTimer = 100;
+      this.rechargeTimer = 30;
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -140,9 +140,9 @@ define('app/game', [
       } else if (this.hitbox.x < this.startX) {
         this.direction = true;
       }
-      var baseX = (this.direction) ? 1 : -1;
-      this.velocity.x = baseX * (8 - countEnemies());
-      this.velocity.y = 0.1 * (8 - countEnemies());
+      var multiplerX = (this.direction) ? 1 : -1;
+      this.velocity.x = utils.interpolateLinear(24, 1, 0.1)[countEnemies()-1] * multiplerX;
+      this.velocity.y = utils.interpolateLinear(24, 1, 0.1)[countEnemies()-1]
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
@@ -267,6 +267,21 @@ define('app/game', [
     return false
   }
 
+  function endConditions() {
+    _.chain(gameObjects)
+        .filter(function(item) {
+          return item instanceof Enemy;
+        })
+        .each(function(item) {
+          if (item.hitbox.y > 620) gameOver = true;
+        });
+
+    var enemies = _.filter(gameObjects, function(item) {
+      return item instanceof Enemy || item instanceof EnemyExplosion;
+    });
+    if (enemies.length === 0) gameOver = true;
+  }
+
   return {
     init: function(_playSound) {
 
@@ -284,20 +299,22 @@ define('app/game', [
       })
       gameObjects.push(playerShip)
 
-      _.each(new Array(7), function(item, idx) {
-        gameObjects.push(new Enemy({
-          hitbox: {
-            x: 50 + (idx * 45),
-            y: 500,
-            width: 27,
-            height: 21,
-          },
-        }))
-
+      _.each(new Array(7), function(item1, x) {
+        _.each(new Array(3), function(item2, y) {
+          gameObjects.push(new Enemy({
+            hitbox: {
+              x: 50 + (x * 45),
+              y: 100 + (y * 45),
+              width: 27,
+              height: 21,
+            }
+          }))
+        });
       })
-
     },
     tick: function() {
+
+      endConditions();
 
       if (gameOver) {
         return;
@@ -343,7 +360,7 @@ define('app/game', [
         }
         for (let i = 0; i < gameObjects.length; i++) {
           const other = gameObjects[i]
-          if (!other.markedForRemoval && !gameObject.markedForRemoval && 
+          if (!other.markedForRemoval && !gameObject.markedForRemoval &&
             detectCollision(
               gameObject.hitbox,
               nextPosition,
