@@ -2,10 +2,14 @@ define('app/game', [
   'underscore',
   'userInput',
   'utils',
+  'SpriteSheet',
+  'app/images'
 ], function (
   _,
   userInput,
-  utils
+  utils,
+  SpriteSheet,
+  images
 ) {
   const canvasWidth = 480
   const canvasHeight = 640
@@ -67,7 +71,7 @@ define('app/game', [
       super(config)
     }
   }
-  
+
   function debugWriteButtons(pad) {
     if (DEBUG_WRITE_BUTTONS && pad) {
       let str = 'axes'
@@ -193,10 +197,8 @@ define('app/game', [
           x: gameObject.hitbox.x + gameObject.velocity.x,
           y: gameObject.hitbox.y + gameObject.velocity.y,
         }
-        
         for (let i = 0; i < gameObjects.length; i++) {
           const other = gameObjects[i]
-
           if (detectCollision(
               gameObject.hitbox,
               nextPosition,
@@ -217,7 +219,7 @@ define('app/game', [
         // reset velocity
         gameObject.velocity.x = 0
         gameObject.velocity.y = 0
-        
+
       })
 
       // remove all removed gameObjects
@@ -229,9 +231,7 @@ define('app/game', [
 
     },
     draw: function (renderingContext) {
-      // bg black
-      renderingContext.fillStyle = '#000000'
-      renderingContext.fillRect(0, 0, canvasWidth, canvasHeight)
+      renderingContext.drawImage(images.background, 0, 0);
 
       _.each(gameObjects, function (gameObject) {
         gameObject.draw(renderingContext)
