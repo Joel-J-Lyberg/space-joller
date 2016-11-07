@@ -3,13 +3,15 @@ define('app/game', [
   'userInput',
   'utils',
   'SpriteSheet',
-  'app/images'
+  'app/images',
+  'Krocka',
 ], function (
   _,
   userInput,
   utils,
   SpriteSheet,
-  images
+  images,
+  Krocka
 ) {
   const canvasWidth = 480
   const canvasHeight = 640
@@ -27,14 +29,12 @@ define('app/game', [
   let gameObjects = []
   let playerShip
 
-  class GameObject {
+  class GameObject extends Krocka.AABB {
     constructor(config) {
+      super(config.hitbox.width, config.hitbox.height)
       this.markedForRemoval = false;
-      this.hitbox = config.hitbox
-      this.velocity = config.velocity || {
-        x: 0,
-        y: 0,
-      }
+      this.position = new Krocka.Vector(config.hitbox.x, config.hitbox.y)
+      this.velocity = (new Krocka.Vector()).set(config.velocity || {x: 0, y: 0})
     }
     tick() {
     }
@@ -67,7 +67,7 @@ define('app/game', [
     }
     draw(renderingContext) {
       renderingContext.save()
-      renderingContext.translate(this.hitbox.x, this.hitbox.y);
+      renderingContext.translate(this.position.x, this.position.y);
       this.spritesheet.draw(renderingContext);
       renderingContext.restore();
     }
@@ -79,6 +79,7 @@ define('app/game', [
       this.speed = config.speed
       this.recharged = true
       this.rechargeTimer = 0;
+      this.setDetectable(true)
     }
     tick() {
       this.rechargeTimer--;
@@ -92,7 +93,7 @@ define('app/game', [
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
-        renderingContext.drawImage(images.player, this.hitbox.x, this.hitbox.y);
+        renderingContext.drawImage(images.player, this.position.x, this.position.y);
       } else {
         super.draw(renderingContext);
       }
@@ -116,7 +117,7 @@ define('app/game', [
     }
     draw(renderingContext) {
       renderingContext.save()
-      renderingContext.translate(this.hitbox.x - 7, this.hitbox.y - 7);
+      renderingContext.translate(this.position.x - 7, this.position.y - 7);
       this.spritesheet.draw(renderingContext);
       renderingContext.restore();
     }
@@ -126,13 +127,14 @@ define('app/game', [
     constructor(config) {
       super(config)
       this.speed = config.speed
+      this.setDetectable(true)
     }
     tick() {
       this.velocity.y = -this.speed
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
-        renderingContext.drawImage(images.player_shot, this.hitbox.x, this.hitbox.y);
+        renderingContext.drawImage(images.player_shot, this.position.x, this.position.y);
       } else {
         super.draw(renderingContext);
       }
@@ -143,13 +145,14 @@ define('app/game', [
      constructor(config) {
       super(config)
       this.speed = config.speed
+      this.setDetectable(true)
     }
     tick() {
       this.velocity.y = this.speed
     }
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
-        renderingContext.drawImage(images.invader_shot, this.hitbox.x, this.hitbox.y);
+        renderingContext.drawImage(images.invader_shot, this.position.x, this.position.y);
       } else {
         super.draw(renderingContext);
       }
@@ -163,13 +166,14 @@ define('app/game', [
       this.spritesheet.play();
       this.direction = true; // false = left, true = right
       this.startX = config.hitbox.x;
+      this.setDetectable(true)
     }
     tick() {
       super.tick();
       this.spritesheet.tick(1000/60);
-      if (this.direction && this.hitbox.x > this.startX + 80) {
+      if (this.direction && this.position.x > this.startX + 80) {
         this.direction = false;
-      } else if (this.hitbox.x < this.startX) {
+      } else if (this.position.x < this.startX) {
         this.direction = true;
       }
       var multiplerX = (this.direction) ? 1 : -1;
@@ -184,8 +188,8 @@ define('app/game', [
         playSound('enemyShot')
         gameObjects.push(new EnemyBullet({
           hitbox: {
-            x: this.hitbox.x + this.hitbox.width / 2,
-            y: this.hitbox.y + bulletHeight,
+            x: this.position.x + this.width / 2,
+            y: this.position.y + bulletHeight,
             width: 3,
             height: bulletHeight,
           },
@@ -196,7 +200,7 @@ define('app/game', [
     draw(renderingContext) {
       if (!DEBUG_DISABLE_GRAPHICS) {
         renderingContext.save()
-        renderingContext.translate(this.hitbox.x, this.hitbox.y);
+        renderingContext.translate(this.position.x, this.position.y);
         this.spritesheet.draw(renderingContext);
         renderingContext.restore();
       } else {
@@ -220,7 +224,7 @@ define('app/game', [
     }
     draw(renderingContext) {
       renderingContext.save()
-      renderingContext.translate(this.hitbox.x - 7, this.hitbox.y - 7);
+      renderingContext.translate(this.position.x - 7, this.position.y - 7);
       this.spritesheet.draw(renderingContext);
       renderingContext.restore();
     }
@@ -261,8 +265,8 @@ define('app/game', [
       playSound('enemyHit')
       gameObjects.push(new EnemyExplosion({
         hitbox: {
-          x: other.hitbox.x,
-          y: other.hitbox.y
+          x: gameObject.position.x,
+          y: gameObject.position.y
         },
       }))
     }
@@ -270,8 +274,8 @@ define('app/game', [
       playerShip.markedForRemoval = true;
       gameObjects.push(new PlayerExplosion({
         hitbox: {
-          x: playerShip.hitbox.x,
-          y: playerShip.hitbox.y
+          x: playerShip.position.x,
+          y: playerShip.position.y
         }
       }))
     }
@@ -279,14 +283,14 @@ define('app/game', [
       playerShip.markedForRemoval = true;
       gameObjects.push(new PlayerExplosion({
         hitbox: {
-          x: playerShip.hitbox.x,
-          y: playerShip.hitbox.y
+          x: playerShip.position.x,
+          y: playerShip.position.y
         }
       }))
     }
   }
 
-  function detectCollision(hitbox, nextPosition, otherHitbox) {
+  function detectCollision(hitbox, nextPosition, otherHitbox) { // TODO
     if (hitbox === otherHitbox) {
       return false
     }
@@ -331,7 +335,7 @@ define('app/game', [
           return item instanceof Enemy;
         })
         .each(function(item) {
-          if (item.hitbox.y > 620) gameOver = true;
+          if (item.position.y > 620) gameOver = true;
         });
 
     var enemies = _.filter(gameObjects, function(item) {
@@ -408,8 +412,8 @@ define('app/game', [
         playerShip.fire();
         gameObjects.push(new PlayerBullet({
           hitbox: {
-            x: playerShip.hitbox.x + playerShip.hitbox.width / 2,
-            y: playerShip.hitbox.y - bulletHeight,
+            x: playerShip.position.x + playerShip.width / 2,
+            y: playerShip.position.y - bulletHeight,
             width: 3,
             height: bulletHeight,
           },
@@ -423,38 +427,34 @@ define('app/game', [
 
       _.each(gameObjects, function (gameObject) {
         gameObject.tick()
+
+        gameObject.nextPosition = {
+          x: gameObject.position.x + gameObject.velocity.x,
+          y: gameObject.position.y + gameObject.velocity.y,
+        }
       })
 
-      // resolve movement changes and collisions
-      _.each(gameObjects, function (gameObject) {
-        const nextPosition = {
-          x: gameObject.hitbox.x + gameObject.velocity.x,
-          y: gameObject.hitbox.y + gameObject.velocity.y,
-        }
-        for (let i = 0; i < gameObjects.length; i++) {
-          const other = gameObjects[i]
-          if (!other.markedForRemoval && !gameObject.markedForRemoval &&
-            detectCollision(
-              gameObject.hitbox,
-              nextPosition,
-              other.hitbox)) {
-            resolveCollision(gameObject, other)
+      Krocka.run({
+        objects: gameObjects,
+        detector: function (gameObject, other) {
+          if (!other.markedForRemoval && !gameObject.markedForRemoval) {
+            return Krocka.detectAABBtoAABB(gameObject, other)
           }
-        }
+          return false
+        },
+        resolver: function (collision) {
+          const collidee1 = collision.collidees[0]
+          const collidee2 = collision.collidees[1]
+          resolveCollision(collidee1, collidee2)
+        },
+      })
 
-        // set new position
-        // if (
-        //     nextPosition.x >= 0 &&
-        //     nextPosition.x + gameObject.hitbox.width <= canvasWidth)
-        // {
-          gameObject.hitbox.x = nextPosition.x
-          gameObject.hitbox.y = nextPosition.y
-        // }
+      _.each(gameObjects, function (gameObject) {
+
+        gameObject.position.add(gameObject.velocity)
 
         // reset velocity
-        gameObject.velocity.x = 0
-        gameObject.velocity.y = 0
-
+        gameObject.velocity.setXY(0, 0)
       })
 
       // remove all removed gameObjects
