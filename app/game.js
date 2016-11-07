@@ -31,22 +31,21 @@ define('app/game', [
 
   class GameObject extends Krocka.AABB {
     constructor(config) {
-      super(config.hitbox.width, config.hitbox.height)
+      super(config.width, config.height)
       this.markedForRemoval = false;
-      this.position = new Krocka.Vector(config.hitbox.x, config.hitbox.y)
+      this.position = new Krocka.Vector(config.position.x, config.position.y)
       this.velocity = (new Krocka.Vector()).set(config.velocity || {x: 0, y: 0})
     }
     tick() {
     }
     draw(renderingContext) {
       if (DEBUG_RENDER_HITBOXES) {
-        const hitbox = this.hitbox
         renderingContext.strokeStyle = '#FFFF00'
         renderingContext.strokeRect(
-          hitbox.x,
-          hitbox.y,
-          hitbox.width,
-          hitbox.height)
+          this.position.x,
+          this.position.y,
+          this.width,
+          this.height)
       }
     }
     remove() {
@@ -165,7 +164,7 @@ define('app/game', [
       this.spritesheet = SpriteSheet.new(images.invader, images.invader_spritesheet_blueprint)
       this.spritesheet.play();
       this.direction = true; // false = left, true = right
-      this.startX = config.hitbox.x;
+      this.startX = config.position.x;
       this.setDetectable(true)
     }
     tick() {
@@ -187,12 +186,12 @@ define('app/game', [
       if (Math.random() < chance) {
         playSound('enemyShot')
         gameObjects.push(new EnemyBullet({
-          hitbox: {
+          position: {
             x: this.position.x + this.width / 2,
             y: this.position.y + bulletHeight,
-            width: 3,
-            height: bulletHeight,
           },
+          width: 3,
+          height: bulletHeight,
           speed: 2,
         }))
       }
@@ -252,83 +251,6 @@ define('app/game', [
     }).length;
   }
 
-  function isOfTypes(gameObject, other, type1, type2) {
-    return (gameObject instanceof type1 && other instanceof type2) ||
-        (gameObject instanceof type2 && other instanceof type1)
-  }
-
-  function resolveCollision(gameObject, other) {
-    if (isOfTypes(gameObject, other, Enemy, PlayerBullet)) {
-      gameObject.remove();
-      other.remove();
-
-      playSound('enemyHit')
-      gameObjects.push(new EnemyExplosion({
-        hitbox: {
-          x: gameObject.position.x,
-          y: gameObject.position.y
-        },
-      }))
-    }
-    if (isOfTypes(gameObject, other, Enemy, PlayerShip)) {
-      playerShip.markedForRemoval = true;
-      gameObjects.push(new PlayerExplosion({
-        hitbox: {
-          x: playerShip.position.x,
-          y: playerShip.position.y
-        }
-      }))
-    }
-    if (isOfTypes(gameObject, other, EnemyBullet, PlayerShip)) {
-      playerShip.markedForRemoval = true;
-      gameObjects.push(new PlayerExplosion({
-        hitbox: {
-          x: playerShip.position.x,
-          y: playerShip.position.y
-        }
-      }))
-    }
-  }
-
-  function detectCollision(hitbox, nextPosition, otherHitbox) { // TODO
-    if (hitbox === otherHitbox) {
-      return false
-    }
-    if (utils.isXYInsideRect(
-        nextPosition.x,
-        nextPosition.y,
-        otherHitbox.x,
-        otherHitbox.y,
-        otherHitbox.width,
-        otherHitbox.height) ||
-      utils.isXYInsideRect(
-        nextPosition.x + hitbox.width,
-        nextPosition.y,
-        otherHitbox.x,
-        otherHitbox.y,
-        otherHitbox.width,
-        otherHitbox.height) ||
-      utils.isXYInsideRect(
-        nextPosition.x,
-        nextPosition.y + hitbox.height,
-        otherHitbox.x,
-        otherHitbox.y,
-        otherHitbox.width,
-        otherHitbox.height) ||
-      utils.isXYInsideRect(
-        nextPosition.x + hitbox.width,
-        nextPosition.y + hitbox.height,
-        otherHitbox.x,
-        otherHitbox.y,
-        otherHitbox.width,
-        otherHitbox.height)
-      ) {
-      return true
-    }
-
-    return false
-  }
-
   function endConditions() {
     _.chain(gameObjects)
         .filter(function(item) {
@@ -350,12 +272,12 @@ define('app/game', [
       playSound = _playSound
 
       playerShip = new PlayerShip({
-        hitbox: {
+        position: {
           x: canvasWidth / 2,
           y: canvasHeight - 48,
-          width: 27,
-          height: 21,
         },
+        width: 27,
+        height: 21,
         speed: 4,
 
       })
@@ -364,28 +286,28 @@ define('app/game', [
       _.each(new Array(7), function(item1, x) {
         _.each(new Array(3), function(item2, y) {
           gameObjects.push(new Enemy({
-            hitbox: {
+            position: {
               x: 50 + (x * 45),
               y: 20 + (y * 45),
-              width: 27,
-              height: 21,
-            }
+            },
+            width: 27,
+            height: 21,
           }))
         });
       })
 
       gameObjects.push(new Star({
-        hitbox: {
+        position: {
           x: 430,
-          y: 40
+          y: 40,
         },
         start: 2000
       }))
 
       gameObjects.push(new Star({
-        hitbox: {
+        position: {
           x: 40,
-          y: 600
+          y: 600,
         },
         start: 0
       }))
@@ -411,12 +333,12 @@ define('app/game', [
         playSound('shot')
         playerShip.fire();
         gameObjects.push(new PlayerBullet({
-          hitbox: {
+          position: {
             x: playerShip.position.x + playerShip.width / 2,
             y: playerShip.position.y - bulletHeight,
-            width: 3,
-            height: bulletHeight,
           },
+          width: 3,
+          height: bulletHeight,
           speed: 7,
         }))
       }
@@ -443,9 +365,40 @@ define('app/game', [
           return false
         },
         resolver: function (collision) {
-          const collidee1 = collision.collidees[0]
-          const collidee2 = collision.collidees[1]
-          resolveCollision(collidee1, collidee2)
+
+          collision.resolveByType(PlayerBullet, Enemy, function (playerBullet, enemy) {
+            enemy.remove();
+            playerBullet.remove();
+
+            playSound('enemyHit')
+            gameObjects.push(new EnemyExplosion({
+              position: {
+                x: enemy.position.x,
+                y: enemy.position.y,
+              },
+            }))
+          })
+
+          collision.resolveByType(PlayerShip, Enemy, function (playerShip, enemy) {
+            playerShip.markedForRemoval = true;
+            gameObjects.push(new PlayerExplosion({
+              position: {
+                x: playerShip.position.x,
+                y: playerShip.position.y,
+              },
+            }))
+          })
+
+          collision.resolveByType(PlayerShip, EnemyBullet, function (playerShip, enemyBullet) {
+            playerShip.markedForRemoval = true;
+            gameObjects.push(new PlayerExplosion({
+              position: {
+                x: playerShip.position.x,
+                y: playerShip.position.y,
+              },
+            }))
+          })
+
         },
       })
 
