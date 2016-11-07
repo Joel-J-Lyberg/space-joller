@@ -1,12 +1,10 @@
 define('app/game', [
-  'underscore',
   'userInput',
   'utils',
   'SpriteSheet',
   'app/images',
   'Krocka',
 ], function (
-  _,
   userInput,
   utils,
   SpriteSheet,
@@ -28,6 +26,9 @@ define('app/game', [
 
   let gameObjects = []
   let playerShip
+
+  const enemyRows = 4
+  const enemyColumns = 7
 
   class GameObject extends Krocka.AABB {
     constructor(config) {
@@ -176,13 +177,14 @@ define('app/game', [
         this.direction = true;
       }
       var multiplerX = (this.direction) ? 1 : -1;
-      this.velocity.x = utils.interpolateLinear(24, 1.8, 0.1)[countEnemies()-1] * multiplerX;
-      this.velocity.y = utils.interpolateLinear(24, 0.6, 0.1)[countEnemies()-1]
+      const totalEnemyCount = enemyRows * enemyColumns
+      this.velocity.x = utils.interpolateLinear(totalEnemyCount, 1.8, 0.1)[countEnemies()-1] * multiplerX;
+      this.velocity.y = utils.interpolateLinear(totalEnemyCount, 0.6, 0.1)[countEnemies()-1]
 
       this.possiblyAShot();
     }
     possiblyAShot() {
-      var chance = utils.interpolateLinear(24, 0.002, 0.0002)[countEnemies()-1];
+      var chance = utils.interpolateLinear(countEnemies(), 0.002, 0.0002)[countEnemies()-1];
       if (Math.random() < chance) {
         playSound('enemyShot')
         gameObjects.push(new EnemyBullet({
@@ -246,21 +248,20 @@ define('app/game', [
   }
 
   function countEnemies() {
-    return _.filter(gameObjects, function(obj) {
+    return gameObjects.filter(function(obj) {
       return obj instanceof Enemy;
     }).length;
   }
 
   function endConditions() {
-    _.chain(gameObjects)
-        .filter(function(item) {
-          return item instanceof Enemy;
-        })
-        .each(function(item) {
-          if (item.position.y > 620) gameOver = true;
-        });
+    gameObjects.filter(function (item) {
+      return item instanceof Enemy
+    })
+    .forEach(function(item) {
+      if (item.position.y > 620) gameOver = true;
+    })
 
-    var enemies = _.filter(gameObjects, function(item) {
+    var enemies = gameObjects.filter(function(item) {
       return item instanceof Enemy || item instanceof EnemyExplosion;
     });
     if (enemies.length === 0) gameOver = true;
@@ -283,17 +284,15 @@ define('app/game', [
       })
       gameObjects.push(playerShip)
 
-      _.each(new Array(7), function(item1, x) {
-        _.each(new Array(3), function(item2, y) {
-          gameObjects.push(new Enemy({
-            position: {
-              x: 50 + (x * 45),
-              y: 20 + (y * 45),
-            },
-            width: 27,
-            height: 21,
-          }))
-        });
+      utils.columnsAndRows(enemyColumns, enemyRows, function (column, row) {
+        gameObjects.push(new Enemy({
+          position: {
+            x: 50 + (column * 45),
+            y: 20 + (row * 45),
+          },
+          width: 27,
+          height: 21,
+        }))
       })
 
       gameObjects.push(new Star({
@@ -347,7 +346,7 @@ define('app/game', [
         return !gameObject.markedForRemoval
       })
 
-      _.each(gameObjects, function (gameObject) {
+      gameObjects.forEach(function (gameObject) {
         gameObject.tick()
 
         gameObject.nextPosition = {
@@ -402,7 +401,7 @@ define('app/game', [
         },
       })
 
-      _.each(gameObjects, function (gameObject) {
+      gameObjects.forEach(function (gameObject) {
 
         gameObject.position.add(gameObject.velocity)
 
@@ -421,7 +420,7 @@ define('app/game', [
     draw: function (renderingContext) {
       renderingContext.drawImage(images.background, 0, 0);
 
-      _.each(gameObjects, function (gameObject) {
+      gameObjects.forEach(function (gameObject) {
         gameObject.draw(renderingContext)
       })
 
